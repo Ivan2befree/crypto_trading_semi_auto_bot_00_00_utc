@@ -758,7 +758,7 @@ def search_for_tickers_with_rebound_situations(db_where_ohlcv_data_for_stocks_is
                                                           table_with_ohlcv_data_df,
                                                           row_number_of_bpu1)
 
-                    advanced_atr = round(advanced_atr, 6)
+                    # advanced_atr = round(advanced_atr, 6)
 
                     #get ohlcv of bsu
                     open_of_bsu = high_of_bsu = low_of_bsu = close_of_bsu = volume_of_bsu = timestamp_of_bsu = np.nan

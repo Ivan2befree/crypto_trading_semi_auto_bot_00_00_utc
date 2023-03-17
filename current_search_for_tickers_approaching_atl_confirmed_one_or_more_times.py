@@ -775,8 +775,8 @@ def search_for_tickers_with_rebound_situations(db_where_ohlcv_data_for_stocks_is
             #find rebound from atl
             if len(ohlcv_df_with_low_equal_to_atl_slice)>1:
                 # list_of_tickers_where_atl_is_also_limit_level.append(stock_name)
-                print ( "ohlcv_df_with_low_equal_to_atl_slice" )
-                print ( ohlcv_df_with_low_equal_to_atl_slice.to_string() )
+                # print ( "ohlcv_df_with_low_equal_to_atl_slice" )
+                # print ( ohlcv_df_with_low_equal_to_atl_slice.to_string() )
                 # print ( "list_of_tickers_where_atl_is_also_limit_level" )
                 # print ( list_of_tickers_where_atl_is_also_limit_level )
                 ohlcv_df_with_low_equal_to_atl_slice=\
@@ -785,6 +785,29 @@ def search_for_tickers_with_rebound_situations(db_where_ohlcv_data_for_stocks_is
                 # print ( ohlcv_df_with_high_equal_to_ath_slice.to_string () )
                 row_number_of_bpu1 = ohlcv_df_with_low_equal_to_atl_slice["index_column"].iat[1]
                 row_number_of_bsu = ohlcv_df_with_low_equal_to_atl_slice["index_column"].iat[0]
+
+
+                ########################################
+                # check if the found atl is legit and no broken for the last 2 years
+                last_all_time_low_row_number=row_number_of_bsu
+                atl_is_not_broken_for_a_long_time = True
+                try:
+                    number_of_days_where_atl_was_not_broken = 366 * 2
+                    table_with_ohlcv_data_df_slice_numpy_array = table_with_ohlcv_data_df.to_numpy(copy=True)
+                    atl_is_not_broken_for_a_long_time = check_atl_breakout(table_with_ohlcv_data_df_slice_numpy_array,
+                                                                           number_of_days_where_atl_was_not_broken,
+                                                                           all_time_low,
+                                                                           last_all_time_low_row_number)
+                    print(f"atl={all_time_low}")
+                    print(f"atl_is_not_broken_for_a_long_time for {stock_name}={atl_is_not_broken_for_a_long_time}")
+
+                except:
+                    pass
+
+                if atl_is_not_broken_for_a_long_time == False:
+                    continue
+
+
 
                 #check that all time low was not broken 5 years before
                 if (row_number_of_bsu-(365*2))>=0:
@@ -829,7 +852,7 @@ def search_for_tickers_with_rebound_situations(db_where_ohlcv_data_for_stocks_is
                                                       table_with_ohlcv_data_df,
                                                       row_number_of_bpu1)
 
-                advanced_atr = round(advanced_atr, 6)
+                # advanced_atr = round(advanced_atr, 6)
 
                 #get ohlcv of bsu
                 open_of_bsu = high_of_bsu = low_of_bsu = close_of_bsu = volume_of_bsu = timestamp_of_bsu = np.nan

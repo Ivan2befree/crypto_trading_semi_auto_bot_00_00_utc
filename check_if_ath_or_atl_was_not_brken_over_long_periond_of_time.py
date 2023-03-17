@@ -7,14 +7,22 @@ def check_ath_breakout(table_with_ohlcv_data_df_slice_numpy_array,
                        row_of_last_ath):
     # Calculate the row index to start selecting data from
     start_row_index = max(0, row_of_last_ath - number_of_days_where_ath_was_not_broken)
+    print("start_row_index")
+    print(start_row_index)
 
     # Select the relevant rows from the numpy array
     selected_rows = table_with_ohlcv_data_df_slice_numpy_array[start_row_index:row_of_last_ath + 1]
+    print("selected_rows")
+    print(selected_rows)
 
     # Determine if the high was broken during the selected period
     ath_is_not_broken_for_a_long_time = True
     max_high_over_given_perion = np.max(selected_rows[:, 2])
+    print("max_high_over_given_perion_when_true")
+    print(max_high_over_given_perion)
     if max_high_over_given_perion > ath:
+        print("max_high_over_given_perion_when_false")
+        print(max_high_over_given_perion)
         ath_is_not_broken_for_a_long_time = False
 
     return ath_is_not_broken_for_a_long_time
