@@ -20,7 +20,15 @@ import ccxt
 from sqlalchemy import create_engine
 from sqlalchemy_utils import create_database,database_exists
 from pytz import timezone
+from verify_that_asset_has_enough_volume import check_volume
+from get_info_from_load_markets import get_limit_of_daily_candles_original_limits
 
+def get_last_asset_type_url_maker_and_taker_fee_from_ohlcv_table(ohlcv_data_df):
+    asset_type = ohlcv_data_df["asset_type"].iat[-1]
+    maker_fee = ohlcv_data_df["maker_fee"].iat[-1]
+    taker_fee = ohlcv_data_df["taker_fee"].iat[-1]
+    url_of_trading_pair = ohlcv_data_df["url_of_trading_pair"].iat[-1]
+    return asset_type,maker_fee,taker_fee,url_of_trading_pair
 def drop_table(table_name, engine):
     conn = engine.connect()
     query = text(f"DROP TABLE IF EXISTS {table_name}")
@@ -184,6 +192,10 @@ def get_last_timestamp_from_ohlcv_table(ohlcv_data_df):
     last_timestamp = ohlcv_data_df["Timestamp"].iat[-1]
     return last_timestamp
 
+def get_last_index_column_value_from_ohlcv_table(ohlcv_data_df):
+    last_index = ohlcv_data_df["index"].iat[-1]
+    return last_index
+
 def add_time_of_next_candle_print_to_df(data_df):
     try:
         # Set the timezone for Moscow
@@ -239,7 +251,8 @@ def get_hisorical_data_from_exchange_for_many_symbols(last_bitcoin_price,exchang
     exchange_object=False
     try:
         print("exchange1=", exchange)
-        exchange_object = getattr ( ccxt , exchange ) ()
+        exchange_object, limit_of_daily_candles = \
+            get_limit_of_daily_candles_original_limits(exchange)
 
 
 
@@ -279,9 +292,27 @@ def get_hisorical_data_from_exchange_for_many_symbols(last_bitcoin_price,exchang
                     print(string_for_comparison_pair_plus_exchange)
                     # print("list_of_crypto_plus_exchange")
                     # print(list_of_crypto_plus_exchange)
+
+                    # if string_for_comparison_pair_plus_exchange!="1INCH_USDT:USDT_on_gateio":
+                    #     continue
+
+
+
                     table_with_ohlcv_data_df = \
                         pd.read_sql_query(f'''select * from "{string_for_comparison_pair_plus_exchange}"''',
                                           engine)
+
+
+
+                    # #delete last row because it is not a complete bar
+                    last_index=get_last_index_column_value_from_ohlcv_table(table_with_ohlcv_data_df)
+                    engine.execute(f'''DELETE FROM public."{string_for_comparison_pair_plus_exchange}" WHERE "index" >= {last_index};''')
+
+                    # drop the last row from df
+                    table_with_ohlcv_data_df = table_with_ohlcv_data_df.drop(table_with_ohlcv_data_df.index[-1])
+
+
+
                     last_timestamp = get_last_timestamp_from_ohlcv_table(table_with_ohlcv_data_df)
                     print(f"last_timestamp for {trading_pair} on {exchange}")
                     print(last_timestamp)
@@ -300,6 +331,7 @@ def get_hisorical_data_from_exchange_for_many_symbols(last_bitcoin_price,exchang
 
                     # if exchange!="binance" and trading_pair!="BETA/BUSD":
                     #     continue
+                    data=np.nan
 
                     try:
                         data = exchange_object.fetch_ohlcv(trading_pair, timeframe, since=int(last_timestamp * 1000))
@@ -332,6 +364,8 @@ def get_hisorical_data_from_exchange_for_many_symbols(last_bitcoin_price,exchang
                     # print(min_volume_over_last_n_days_in_dollars)
                     # if min_volume_over_last_n_days_in_dollars < 2 * last_bitcoin_price:
                     #     continue
+
+
 
                     current_timestamp = time.time()
                     last_timestamp_in_df = ohlcv_data_several_last_rows_df.tail(1).index.item() / 1000.0
@@ -385,6 +419,16 @@ def get_hisorical_data_from_exchange_for_many_symbols(last_bitcoin_price,exchang
 
                     ohlcv_data_several_last_rows_df["exchange"] = exchange
                     print("5program got here")
+
+                    asset_type, maker_fee, taker_fee, url_of_trading_pair = \
+                        get_last_asset_type_url_maker_and_taker_fee_from_ohlcv_table(table_with_ohlcv_data_df)
+
+                    ohlcv_data_several_last_rows_df["asset_type"] = asset_type
+                    ohlcv_data_several_last_rows_df["maker_fee"] = maker_fee
+                    ohlcv_data_several_last_rows_df["taker_fee"] = taker_fee
+                    ohlcv_data_several_last_rows_df["url_of_trading_pair"] = url_of_trading_pair
+
+
                     ohlcv_data_several_last_rows_df["short_name"] = np.nan
                     print("6program got here")
                     ohlcv_data_several_last_rows_df["country"] = np.nan
@@ -397,6 +441,12 @@ def get_hisorical_data_from_exchange_for_many_symbols(last_bitcoin_price,exchang
                     ohlcv_data_several_last_rows_df["exchange_timezone_name"] = np.nan
                     ohlcv_data_several_last_rows_df["industry"] = np.nan
                     ohlcv_data_several_last_rows_df["market_cap"] = np.nan
+
+
+
+
+
+
 
                     ohlcv_data_several_last_rows_df.set_index("open_time")
                     add_time_of_next_candle_print_to_df(ohlcv_data_several_last_rows_df)

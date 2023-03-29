@@ -19,7 +19,7 @@ from sqlalchemy_utils import create_database,database_exists
 from sqlalchemy import inspect
 import datetime as dt
 from sqlalchemy import text
-
+from verify_that_asset_has_enough_volume import check_volume
 
 def drop_table(table_name, engine):
     conn = engine.connect()
